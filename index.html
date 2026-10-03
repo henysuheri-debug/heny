@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Gamifikasi Kimia • Atom & Bohr</title>
+  <!-- Three.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Roboto, system-ui, -apple-system, sans-serif;
+    }
+
+    body {
+      background: #0b0f1c;
+      background-image: radial-gradient(circle at 30% 10%, #1e2a47 0%, #0a0e17 90%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 8px;
+    }
+
+    /* MOBILE VIEW CONTAINER */
+    .app {
+      max-width: 520px;
+      width: 100%;
+      background: rgba(18, 25, 40, 0.85);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-radius: 36px;
+      border: 1px solid rgba(0, 255, 255, 0.2);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 200, 255, 0.3);
+      padding: 18px 16px 22px;
+      color: #eef5ff;
+      transition: all 0.2s;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      text-align: center;
+      background: linear-gradient(135deg, #7ee8fa, #80ffaa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: 1px;
+      filter: drop-shadow(0 0 8px #00e0ff88);
+      margin-bottom: 2px;
+    }
+
+    .subhead {
+      text-align: center;
+      font-size: 0.8rem;
+      color: #9ab8e0;
+      margin-bottom: 12px;
+      border-bottom: 1px dashed #2e4a6b;
+      padding-bottom: 8px;
+      letter-spacing: 0.5px;
+    }
+
+    /* 3D Canvas */
+    .canvas-wrapper {
+      width: 100%;
+      height: 160px;
+      border-radius: 28px;
+      overflow: hidden;
+      margin: 8px 0 16px;
+      border: 1px solid #2f5f7a;
+      background: #070b12;
+      box-shadow: inset 0 0 25px #00000099, 0 6px 12px #00000050;
+    }
+
+    #three-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .stats {
+      display: flex;
+      justify-content: space-between;
+      background: #121e2e;
+      padding: 10px 14px;
+      border-radius: 60px;
+      margin-bottom: 16px;
+      border: 1px solid #2f5270;
+      font-weight: 600;
+      font-size: 0.95rem;
+      box-shadow: 0 4px 10px #00000040;
+    }
+
+    .score, .question-counter {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .score span, .question-counter span {
+      color: #7ee8fa;
+      font-size: 1.3rem;
+      font-weight: 800;
+      text-shadow: 0 0 8px #00c8ff;
+    }
+
+    .quiz-card {
+      background: #0f1a27;
+      border-radius: 28px;
+      padding: 18px 14px;
+      border: 1px solid #2c4e6e;
+      box-shadow: 0 8px 0 #060a10;
+      margin-bottom: 16px;
+    }
+
+    .question-text {
+      font-size: 1.1rem;
+      font-weight: 600;
+      line-height: 1.4;
+      margin-bottom: 18px;
+      color: #e2f0ff;
+      min-height: 3.2rem;
+    }
+
+    .options {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .option-btn {
+      background: #1a2b3f;
+      border: 1px solid #2e5477;
+      border-radius: 60px;
+      padding: 12px 16px;
+      color: #d4eaff;
+      font-size: 0.95rem;
+      font-weight: 500;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.15s;
+      box-shadow: 0 4px 0 #0b121b;
+      letter-spacing: 0.2px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .option-btn:active {
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 #0b121b;
+    }
+
+    .option-btn.correct {
+      background: #1b5e3f;
+      border-color: #6ef0a0;
+      color: #e6ffe6;
+      box-shadow: 0 4px 0 #0d3a24;
+    }
+
+    .option-btn.wrong {
+      background: #6b2a2a;
+      border-color: #ff8a8a;
+      color: #ffe1e1;
+      box-shadow: 0 4px 0 #3a1818;
+    }
+
+    .option-btn.disabled-true {
+      pointer-events: none;
+      opacity: 0.75;
+    }
+
+    .feedback {
+      margin-top: 14px;
+      padding: 10px 14px;
+      border-radius: 20px;
+      background: #14273b;
+      font-size: 0.9rem;
+      text-align: center;
+      border-left: 5px solid #7ee8fa;
+      color: #bfe4ff;
+      font-weight: 500;
+    }
+
+    .next-area {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 18px;
+    }
+
+    .next-btn {
+      background: linear-gradient(135deg, #1e4e6b, #0f3145);
+      border: none;
+      border-radius: 50px;
+      padding: 14px 22px;
+      color: white;
+      font-weight: 700;
+      font-size: 1rem;
+      letter-spacing: 0.5px;
+      box-shadow: 0 6px 0 #0a1824, 0 0 15px #00a6ff50;
+      cursor: pointer;
+      transition: 0.1s;
+      border: 1px solid #4f9dc9;
+      flex: 1;
+      text-align: center;
+    }
+
+    .next-btn:active {
+      transform: translateY(4px);
+      box-shadow: 0 2px 0 #0a1824;
+    }
+
+    .next-btn:disabled {
+      opacity: 0.4;
+      transform: translateY(4px);
+      box-shadow: 0 2px 0 #0a1824;
+      pointer-events: none;
+    }
+
+    .reset-btn {
+      background: #1c3146;
+      border: none;
+      border-radius: 50px;
+      padding: 14px 20px;
+      color: #b8d9ff;
+      font-weight: 600;
+      margin-left: 10px;
+      box-shadow: 0 5px 0 #0d1925;
+      cursor: pointer;
+      border: 1px solid #3b6383;
+      font-size: 0.9rem;
+    }
+
+    .reset-btn:active {
+      transform: translateY(3px);
+      box-shadow: 0 2px 0 #0d1925;
+    }
+
+    .download-section {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
+      align-items: center;
+      justify-content: space-between;
+      background: #0d1724;
+      border-radius: 60px;
+      padding: 10px 14px;
+      border: 1px solid #26445e;
+    }
+
+    .download-btn {
+      background: #004466;
+      border: none;
+      border-radius: 40px;
+      padding: 12px 18px;
+      color: #aae0ff;
+      font-weight: 700;
+      font-size: 0.9rem;
+      box-shadow: 0 4px 0 #002233;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid #2e8bb9;
+      transition: 0.1s;
+      flex: 1;
+      justify-content: center;
+    }
+
+    .download-btn:active {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0 #002233;
+    }
+
+    .last-score {
+      font-size: 0.9rem;
+      color: #9ac7ff;
+      background: #142b40;
+      padding: 8px 14px;
+      border-radius: 40px;
+      font-weight: 600;
+      border: 1px solid #2b5b7c;
+    }
+
+    .game-over-message {
+      text-align: center;
+      font-size: 1.2rem;
+      font-weight: bold;
+      padding: 16px;
+      color: #7ef0b0;
+      text-shadow: 0 0 10px #00ffaa;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <h1>⚛️ ATOM BOHR</h1>
+    <div class="subhead">Struktur Atom • Konfigurasi Bohr • Kelas X</div>
+
+    <!-- 3D Viewer -->
+    <div class="canvas-wrapper">
+      <canvas id="three-canvas"></canvas>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats">
+      <div class="score">🏆 Skor <span id="scoreDisplay">0</span></div>
+      <div class="question-counter">📋 Soal <span id="qCounter">1/8</span></div>
+    </div>
+
+    <!-- Quiz Card -->
+    <div class="quiz-card" id="quizCard">
+      <div class="question-text" id="questionText">Memuat soal...</div>
+      <div class="options" id="optionsContainer"></div>
+      <div class="feedback" id="feedbackMessage">Pilih jawaban yang benar</div>
+    </div>
+
+    <div class="next-area">
+      <button class="next-btn" id="nextBtn" disabled>➡️ Soal Berikutnya</button>
+      <button class="reset-btn" id="resetBtn">🔄 Reset</button>
+    </div>
+
+    <!-- Download JSON & Last Score -->
+    <div class="download-section">
+      <button class="download-btn" id="downloadBtn">⬇️ Unduh JSON</button>
+      <div class="last-score" id="lastScoreLabel">Belum ada nilai</div>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      // ---------- DATA SOAL (Gamifikasi Kimia: Struktur Atom, Teori Bohr, Konfigurasi Bohr) ----------
+      const QUESTIONS = [
+        {
+          question: "Menurut teori atom Bohr, elektron bergerak mengelilingi inti pada...",
+          options: ["Orbital sembarang", "Lintasan tertentu (kulit)", "Awan elektron", "Inti atom"],
+          correct: 1
+        },
+        {
+          question: "Konfigurasi elektron Bohr untuk atom Natrium (Na, Z=11) adalah...",
+          options: ["2, 8, 1", "2, 8, 8", "2, 9", "8, 3"],
+          correct: 0
+        },
+        {
+          question: "Siapa yang mengemukakan model atom dengan tingkat energi (kulit) K, L, M, N?",
+          options: ["Dalton", "Thomson", "Rutherford", "Niels Bohr"],
+          correct: 3
+        },
+        {
+          question: "Jumlah maksimum elektron yang menempati kulit M (n=3) adalah...",
+          options: ["8", "18", "32", "2"],
+          correct: 1
+        },
+        {
+          question: "Atom Oksigen (Z=8) memiliki konfigurasi elektron Bohr...",
+          options: ["2, 6", "2, 4, 2", "2, 8", "2, 2, 4"],
+          correct: 0
+        },
+        {
+          question: "Dalam model atom Bohr, elektron dapat berpindah ke tingkat energi lebih tinggi jika...",
+          options: ["Menyerap energi", "Melepas energi", "Berpindah kulit secara spontan", "Bertumbukan dengan proton"],
+          correct: 0
+        },
+        {
+          question: "Konfigurasi elektron Bohr untuk Kalsium (Ca, Z=20) adalah...",
+          options: ["2, 8, 8, 2", "2, 8, 10", "2, 8, 8, 1", "2, 8, 9, 1"],
+          correct: 0
+        },
+        {
+          question: "Pernyataan yang benar tentang teori atom Bohr adalah...",
+          options: [
+            "Elektron dapat berada di antara kulit",
+            "Elektron tidak melepaskan energi saat mengorbit",
+            "Elektron memiliki energi kontinu",
+            "Inti atom bermuatan negatif"
+          ],
+          correct: 1
+        }
+      ];
+
+      // ---------- STATE ----------
+      let currentIndex = 0;               // 0-based
+      let score = 0;
+      let answered = false;              // apakah soal saat ini sudah dijawab
+      let selectedOptionIndex = null;
+
+      // localStorage keys
+      const STORAGE_KEY = 'kimia_bohr_gamifikasi';
+      const LAST_SCORE_KEY = 'kimia_bohr_last_score';
+
+      // ---------- DOM ----------
+      const scoreDisplay = document.getElementById('scoreDisplay');
+      const qCounter = document.getElementById('qCounter');
+      const questionText = document.getElementById('questionText');
+      const optionsContainer = document.getElementById('optionsContainer');
+      const feedbackMessage = document.getElementById('feedbackMessage');
+      const nextBtn = document.getElementById('nextBtn');
+      const resetBtn = document.getElementById('resetBtn');
+      const downloadBtn = document.getElementById('downloadBtn');
+      const lastScoreLabel = document.getElementById('lastScoreLabel');
+
+      // ---------- THREE.JS SETUP (model atom sederhana) ----------
+      const canvas = document.getElementById('three-canvas');
+      let scene, camera, renderer, nucleus, electronGroup;
+
+      function initThree() {
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x070b12);
+
+        const w = canvas.clientWidth;
+        const h = canvas.clientHeight;
+        camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 1000);
+        camera.position.set(0, 1.2, 3.8);
+        camera.lookAt(0, 0, 0);
+
+        renderer = new THREE.WebGLRenderer({ canvas, alpha: false, antialias: true });
+        renderer.setSize(w, h, false);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+        // Inti atom (bola besar)
+        const nucleusGeo = new THREE.SphereGeometry(0.55, 32, 32);
+        const nucleusMat = new THREE.MeshStandardMaterial({ color: 0xff5500, emissive: 0x441100 });
+        nucleus = new THREE.Mesh(nucleusGeo, nucleusMat);
+        scene.add(nucleus);
+
+        // Cahaya
+        const ambientLight = new THREE.AmbientLight(0x404060);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+        dirLight.position.set(2, 3, 4);
+        scene.add(dirLight);
+        const pointLight = new THREE.PointLight(0x2266ff, 0.8, 10);
+        pointLight.position.set(0, 0, 2);
+        scene.add(pointLight);
+
+        // Grup elektron (beberapa orbit)
+        electronGroup = new THREE.Group();
+        scene.add(electronGroup);
+
+        // Orbit 1 (K) - 2 elektron
+        const orbit1 = new THREE.Mesh(
+          new THREE.TorusGeometry(1.0, 0.015, 16, 80),
+          new THREE.MeshStandardMaterial({ color: 0x33aaff, emissive: 0x004466 })
+        );
+        orbit1.rotation.x = Math.PI / 2;
+        orbit1.rotation.z = 0.3;
+        scene.add(orbit1);
+
+        // Orbit 2 (L) - 8 elektron (digambarkan 4)
+        const orbit2 = new THREE.Mesh(
+          new THREE.TorusGeometry(1.6, 0.015, 16, 100),
+          new THREE.MeshStandardMaterial({ color: 0x55ddff, emissive: 0x003355 })
+        );
+        orbit2.rotation.x = Math.PI / 2;
+        orbit2.rotation.z = -0.2;
+        scene.add(orbit2);
+
+        // Orbit 3 (M) - representasi
+        const orbit3 = new THREE.Mesh(
+          new THREE.TorusGeometry(2.1, 0.012, 16, 120),
+          new THREE.MeshStandardMaterial({ color: 0x88aaff, emissive: 0x112244 })
+        );
+        orbit3.rotation.x = Math.PI / 2;
+        orbit3.rotation.z = 0.5;
+        scene.add(orbit3);
+
+        // Elektron-elektron (bola kecil) ditempatkan pada orbit
+        const electronMat = new THREE.MeshStandardMaterial({ color: 0x7ee8fa, emissive: 0x006688 });
+        const electronGeo = new THREE.SphereGeometry(0.09, 12, 12);
+
+        // Orbit 1: 2 elektron
+        const e1a = new THREE.Mesh(electronGeo, electronMat);
+        e1a.position.set(1.0, 0, 0);
+        electronGroup.add(e1a);
+        const e1b = new THREE.Mesh(electronGeo, electronMat);
+        e1b.position.set(-1.0, 0, 0);
+        electronGroup.add(e1b);
+
+        // Orbit 2: 4 elektron (simpel)
+        for (let i = 0; i < 4; i++) {
+          const angle = (i / 4) * Math.PI * 2;
+          const e = new THREE.Mesh(electronGeo, electronMat);
+          e.position.set(Math.cos(angle) * 1.6, Math.sin(angle) * 1.6, 0);
+          electronGroup.add(e);
+        }
+
+        // Orbit 3: 2 elektron (hanya ilustrasi)
+        const e3a = new THREE.Mesh(electronGeo, electronMat);
+        e3a.position.set(2.1, 0, 0);
+        electronGroup.add(e3a);
+        const e3b = new THREE.Mesh(electronGeo, electronMat);
+        e3b.position.set(-2.1, 0, 0);
+        electronGroup.add(e3b);
+
+        // Sedikit rotasi grup elektron agar terlihat 3D
+        electronGroup.rotation.x = 0.2;
+        electronGroup.rotation.y = 0.5;
+
+        // Animasi
+        function animate() {
+          requestAnimationFrame(animate);
+
+          // Rotasi lambat grup elektron dan orbit
+          electronGroup.rotation.y += 0.002;
+          electronGroup.rotation.x += 0.0005;
+          orbit1.rotation.z += 0.001;
+          orbit2.rotation.z -= 0.0015;
+          orbit3.rotation.z += 0.001;
+
+          // Inti berdenyut kecil
+          nucleus.scale.setScalar(1 + Math.sin(Date.now() * 0.005) * 0.03);
+
+          renderer.render(scene, camera);
+        }
+        animate();
+
+        // Handle resize
+        window.addEventListener('resize', () => {
+          const w = canvas.clientWidth;
+          const h = canvas.clientHeight;
+          renderer.setSize(w, h, false);
+          camera.aspect = w / h;
+          camera.updateProjectionMatrix();
+        });
+      }
+
+      // ---------- LOCALSTORAGE & JSON ----------
+      function saveProgressToLocal() {
+        const data = {
+          currentIndex: currentIndex,
+          score: score,
+          answered: answered,
+          selectedOptionIndex: selectedOptionIndex,
+          timestamp: new Date().toISOString()
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        // Simpan juga skor terakhir untuk label
+        localStorage.setItem(LAST_SCORE_KEY, score.toString());
+      }
+
+      function loadProgressFromLocal() {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (!stored) return false;
+        try {
+          const data = JSON.parse(stored);
+          if (typeof data.currentIndex === 'number' && data.currentIndex >= 0 && data.currentIndex < QUESTIONS.length) {
+            currentIndex = data.currentIndex;
+            score = data.score || 0;
+            answered = data.answered || false;
+            selectedOptionIndex = (data.selectedOptionIndex !== undefined) ? data.selectedOptionIndex : null;
+            return true;
+          }
+        } catch (e) {
+          console.warn("Gagal load data");
+        }
+        return false;
+      }
+
+      function getLastScoreFromLocal() {
+        const val = localStorage.getItem(LAST_SCORE_KEY);
+        if (val !== null) {
+          lastScoreLabel.textContent = `Nilai terakhir: ${val}`;
+        } else {
+          lastScoreLabel.textContent = 'Belum ada nilai';
+        }
+      }
+
+      // Update UI berdasarkan state
+      function renderQuestion() {
+        const q = QUESTIONS[currentIndex];
+        questionText.textContent = q.question;
+        qCounter.textContent = `${currentIndex + 1}/${QUESTIONS.length}`;
+        scoreDisplay.textContent = score;
+
+        // Buat tombol opsi
+        optionsContainer.innerHTML = '';
+        q.options.forEach((opt, idx) => {
+          const btn = document.createElement('button');
+          btn.className = 'option-btn';
+          btn.textContent = `${String.fromCharCode(65 + idx)}. ${opt}`;
+          btn.dataset.index = idx;
+
+          // Jika sudah dijawab, nonaktifkan dan beri style
+          if (answered) {
+            btn.classList.add('disabled-true');
+            if (idx === q.correct) {
+              btn.classList.add('correct');
+            } else if (idx === selectedOptionIndex && idx !== q.correct) {
+              btn.classList.add('wrong');
+            }
+          } else {
+            btn.addEventListener('click', () => handleOptionClick(idx));
+          }
+          optionsContainer.appendChild(btn);
+        });
+
+        // Feedback
+        if (answered) {
+          const isCorrect = (selectedOptionIndex === q.correct);
+          feedbackMessage.textContent = isCorrect 
+            ? '✅ Benar! Hebat!' 
+            : `❌ Kurang tepat. Jawaban benar: ${String.fromCharCode(65 + q.correct)}. ${q.options[q.correct]}`;
+        } else {
+          feedbackMessage.textContent = 'Pilih salah satu jawaban.';
+        }
+
+        // Next button state
+        nextBtn.disabled = !answered;
+
+        // jika sudah di soal terakhir dan sudah dijawab, ubah teks tombol?
+        if (currentIndex === QUESTIONS.length - 1 && answered) {
+          nextBtn.textContent = '🏁 Selesai';
+        } else {
+          nextBtn.textContent = '➡️ Soal Berikutnya';
+        }
+
+        // Simpan progress ke localStorage setiap render
+        saveProgressToLocal();
+        // Update label skor terakhir
+        getLastScoreFromLocal();
+      }
+
+      // Handler pilih opsi
+      function handleOptionClick(optIndex) {
+        if (answered) return;
+        const q = QUESTIONS[currentIndex];
+        selectedOptionIndex = optIndex;
+        answered = true;
+
+        const isCorrect = (optIndex === q.correct);
+        if (isCorrect) {
+          score += 10; // skor per soal
+        }
+        // Update score display langsung
+        scoreDisplay.textContent = score;
+
+        // Simpan ke localStorage
+        saveProgressToLocal();
+
+        // Re-render untuk menampilkan feedback dan style
+        renderQuestion();
+      }
+
+      // Next button
+      function handleNext() {
+        if (!answered) return;
+
+        if (currentIndex === QUESTIONS.length - 1) {
+          // Game selesai, mungkin reset atau hanya tampilkan pesan
+          feedbackMessage.textContent = '🎉 Selamat! Kamu telah menyelesaikan semua soal!';
+          nextBtn.disabled = true;
+          // simpan skor akhir
+          localStorage.setItem(LAST_SCORE_KEY, score.toString());
+          getLastScoreFromLocal();
+          saveProgressToLocal();
+          return;
+        }
+
+        // Pindah ke soal berikutnya
+        currentIndex++;
+        answered = false;
+        selectedOptionIndex = null;
+
+        // Reset state dan render
+        renderQuestion();
+      }
+
+      // Reset game
+      function resetGame() {
+        if (confirm('Yakin ingin mereset game? Skor akan kembali ke 0.')) {
+          currentIndex = 0;
+          score = 0;
+          answered = false;
+          selectedOptionIndex = null;
+          // Hapus localStorage progress, tapi simpan last score? biarkan last score tetap ada
+          localStorage.removeItem(STORAGE_KEY);
+          // Jangan hapus LAST_SCORE_KEY agar nilai terakhir tetap terlihat
+          renderQuestion();
+          scoreDisplay.textContent = score;
+          getLastScoreFromLocal();
+        }
+      }
+
+      // Download JSON
+      function downloadJSON() {
+        const data = {
+          app: 'Gamifikasi Kimia - Atom Bohr',
+          timestamp: new Date().toISOString(),
+          currentIndex: currentIndex,
+          totalQuestions: QUESTIONS.length,
+          score: score,
+          answered: answered,
+          selectedOptionIndex: selectedOptionIndex,
+          questions: QUESTIONS.map((q, i) => ({
+            no: i + 1,
+            question: q.question,
+            options: q.options,
+            correctAnswer: String.fromCharCode(65 + q.correct) + '. ' + q.options[q.correct]
+          }))
+        };
+        const jsonStr = JSON.stringify(data, null, 2);
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `kimia_bohr_${new Date().toISOString().slice(0,10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+
+      // ---------- INIT APP ----------
+      function initApp() {
+        initThree();
+
+        // Muat progress dari localStorage (jika ada)
+        const loaded = loadProgressFromLocal();
+
+        if (!loaded) {
+          // mulai dari awal
+          currentIndex = 0;
+          score = 0;
+          answered = false;
+          selectedOptionIndex = null;
+        }
+
+        // Pastikan currentIndex valid
+        if (currentIndex >= QUESTIONS.length) currentIndex = QUESTIONS.length - 1;
+
+        // Render pertama
+        renderQuestion();
+
+        // Pasang event listener
+        nextBtn.addEventListener('click', handleNext);
+        resetBtn.addEventListener('click', resetGame);
+        downloadBtn.addEventListener('click', downloadJSON);
+
+        // update last score label
+        getLastScoreFromLocal();
+
+        // Simpan keadaan awal ke localStorage
+        saveProgressToLocal();
+      }
+
+      // Jalankan setelah DOM siap
+      window.addEventListener('DOMContentLoaded', initApp);
+    })();
+  </script>
+</body>
+</html>
